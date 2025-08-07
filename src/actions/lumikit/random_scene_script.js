@@ -4,7 +4,7 @@
 
 // coloque {{<slide_type=*>}} no início de um verso para customizar.
 // Asterisco * no nome da parte aciona a luz ritmo
-// Esclamação ! no nome da parte aciona cenas ritmicas no início da música até o slide 3
+// Exclamação ! no nome da parte aciona cenas ritmicas no início da música até o slide 3
 // se a parte da música contiver "Instrumental" ou "Refrão" também será luz ritmo automaticamente
 
 var receiverID = obj.input.receiver_id;
