@@ -150,6 +150,15 @@ function triggers(module) {
         }
     });
 
+    arr.push({
+        id: "record_control_title_" + mUID,
+        when: "displaying",
+        item: "any_title_subitem",
+        action: function(obj) {
+            handleRecordByTitle(module, obj.title);
+        }
+    });
+
   return arr; // Retorna o array de triggers
 }
 
@@ -229,11 +238,45 @@ function settings() {
             default_value: 20
         },
         {
+            id: 'dante_no_mute_tag',
+            label: jsc.i18n("No-mute tag in filename"),
+            description: jsc.i18n("If the video name contains this character, the Dante channel will NOT be muted (default: ~)."),
+            type: 'string',
+            default_value: '~'
+        },
+        {
             id: 'side_screens_fullscreen',
             label: jsc.i18n("Toggle side screens output"),
             description: jsc.i18n("Turns side screens off during video and back on when finished"),
             type: 'boolean',
             default_value: true
+        },
+        {
+            type: 'separator'
+        },
+        {
+            type: 'title',
+            label: jsc.i18n('vMix Recording Control')
+        },
+        {
+            id: 'start_record_title',
+            name: jsc.i18n('Start recording on media title'),
+            description: jsc.i18n('Starts recording when any item under this media title is displayed.'),
+            type: 'string',
+            component: 'combobox',
+            suggested_values: function(obj) {
+                return getMediaTitleSuggestions();
+            }
+        },
+        {
+            id: 'stop_record_title',
+            name: jsc.i18n('Stop recording on media title'),
+            description: jsc.i18n('Stops recording when any item under this media title is displayed.'),
+            type: 'string',
+            component: 'combobox',
+            suggested_values: function(obj) {
+                return getMediaTitleSuggestions();
+            }
         },
         {
             type: 'separator'
@@ -274,14 +317,12 @@ function vmixVideo(module, show, mediaName) {
     // Se exclamation_mark estiver habilitado, apenas vídeos com "!" no nome serão enviados para o vMix
     if (s.exclamation_mark == 'true' && mediaName.indexOf('!') == -1) {  
            h.log(mUID, "======= " + jsc.i18n("Video not sent to vMix because it does NOT have ! in the name."));
-           restorePreviousScene(module); 
            return;
     }
     
     // Se exclamation_mark estiver desabilitado, apenas vídeos sem "!" no nome serão enviados para o vMix
     if (s.exclamation_mark == 'false' && mediaName.indexOf('!') > -1) { 
            h.log(mUID, "======= " + jsc.i18n("Video not sent to vMix because it HAS ! in the name."));
-           restorePreviousScene(module); 
            return;
     }
     
@@ -314,7 +355,14 @@ function vmixVideo(module, show, mediaName) {
     sendVideo(p1, p2, url);  
     setZoom(p1, p2, zoom); 
     jsc.vmix.setInput(p1, p2, "Fade", 1000);  
-    setDanteMute(module, true);
+    var shouldMute = shouldMuteDante(mediaName_live, s);
+    if (shouldMute) {
+        setDanteMute(module, true);
+        h.setGlobal(mUID + '_danteMuted', true);
+    } else {
+        h.setGlobal(mUID + '_danteMuted', false);
+        h.log(mUID, "Dante mute skipped due to tag in filename.");
+    }
     setSideScreens(module, false);
     
     sendVideo(p1, lastScene == 2 ? s.scene_name2 : s.scene_name1, "about:blank");  
@@ -397,11 +445,64 @@ var id = h.setInterval(function(){
   }, 200);
 }
 
+function handleRecordByTitle(module, title) {
+    var s = module.settings || {};
+    var startTitle = s.start_record_title;
+    var stopTitle = s.stop_record_title;
+
+    if (!title || (!startTitle && !stopTitle)) {
+        return;
+    }
+
+    if (startTitle && stopTitle && startTitle === stopTitle && title === startTitle) {
+        h.log(mUID, '{%t} Start/stop titles are the same. Ignoring to avoid immediate stop.');
+        return;
+    }
+
+    if (startTitle && title === startTitle) {
+        startVmixRecording(module);
+    }
+
+    if (stopTitle && title === stopTitle) {
+        stopVmixRecording(module);
+    }
+}
+
 function calculateZoom(outputResolution, videoResolution) {
     // Calcula o zoom como razão da altura da saída pela altura do vídeo
     var zoom = outputResolution / videoResolution;
     h.log(mUID, "outputResolution:{}, videoResolution:{}, zoom:{}",outputResolution, videoResolution,zoom);
     return zoom;
+}
+
+function getMediaTitleSuggestions() {
+    try {
+        var playlist = h.hly('GetMediaPlaylist');
+        var list = [];
+
+        if (playlist && playlist.data) {
+            for (var i = 0; i < playlist.data.length; i++) {
+                var item = playlist.data[i];
+                if (item.type === 'title' && item.name) {
+                    if (list.indexOf(item.name) === -1) {
+                        list.push(item.name);
+                    }
+                }
+            }
+        }
+        return list;
+    } catch (err) {
+        h.log(mUID, '{%t} Erro ao obter títulos da mídia: {}', err);
+        return [];
+    }
+}
+
+function shouldMuteDante(mediaName, settings) {
+    var tag = (settings && settings.dante_no_mute_tag) ? String(settings.dante_no_mute_tag) : '~';
+    if (!tag) {
+        return true;
+    }
+    return mediaName.indexOf(tag) === -1;
 }
 
 
@@ -439,15 +540,33 @@ function getVideoHeigth(mediaName) {
 
 }
 
+function startVmixRecording(module) {
+    var receiverID = module.settings.receiver_id;
+    if (!receiverID) {
+        return;
+    }
+    jsc.vmix.request(receiverID, 'Function=StartRecording');
+    h.log(mUID, '{%t} vMix recording started.');
+}
+
+function stopVmixRecording(module) {
+    var receiverID = module.settings.receiver_id;
+    if (!receiverID) {
+        return;
+    }
+    jsc.vmix.request(receiverID, 'Function=StopRecording');
+    h.log(mUID, '{%t} vMix recording stopped.');
+}
+
 function gsJump(value) {
 
-h.log(mUID, "gsJump:{}", value);
-
 if (value != undefined) { 
-  h.setGlobal(mUID + '_jumpToScene', value == "" ? null : value);
-  }
-else
-  return h.getGlobal(mUID + '_jumpToScene', null);
+    h.log(mUID, "gsJump:{}", value);
+    h.setGlobal(mUID + '_jumpToScene', value == "" ? null : value);
+    return;
+}
+
+return h.getGlobal(mUID + '_jumpToScene', null);
 }
 
 function getPreviewInputName(receiverID) {
@@ -476,7 +595,10 @@ function restorePreviousScene(module) {
                     return;
             }
     sendToProgram(p1, targetScene, 500);
-    setDanteMute(module, false);
+    if (h.getGlobal(mUID + '_danteMuted', false)) {
+        setDanteMute(module, false);
+        h.setGlobal(mUID + '_danteMuted', false);
+    }
         setSideScreens(module, true);
       sendVideo(p1, s.scene_name1, "about:blank");
       sendVideo(p1, s.scene_name2, "about:blank");
