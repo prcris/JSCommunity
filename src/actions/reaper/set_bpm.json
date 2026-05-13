@@ -1,13 +1,13 @@
 {
-    "id": "lumikit_set_bpm",
-    "name": "Lumikit - Change Master BPM",
-    "description": "Change Master BPM",
+    "id": "reaper_set_bpm",
+    "name": "Change BPM",
+    "description": "Change BPM",
     "i18n": {
         "name": {
-            "pt": "Lumikit - Alterar o BPM Master"
+            "pt": "Alterar BPM"
         },
         "description": {
-            "pt": "Alterar o BPM Master"
+            "pt": "Alterar BPM"
         }
     },
     "script_filter": " !(obj.type == 'trigger' && ((obj.when == 'displaying' && obj.item == 'any_song') || (obj.when == 'change' && obj.item == 'bpm'))) "

@@ -24,5 +24,11 @@
     }, {
         "key": "midi",
         "": "MIDI"
+    }, {
+        "key": "reaper",
+        "": "Reaper (OSC Protocol)"
+    }, {
+        "key": "companion",
+        "": "Bitfocus Companion"
     }
 ]
