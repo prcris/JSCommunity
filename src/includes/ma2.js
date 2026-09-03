@@ -49,11 +49,6 @@ jsc.ma2.connect(receiverID, {
 // não são realmente persistentes entre recargas. Para ter estado global e
 // persistente, precisamos armazenar em h.global (equivalente a setGlobal/getGlobal).
 
-// Armazena conexões ativas por receiverID (estado auxiliar em memória)
-var _connections = h.global.grandma2_connections || {};
-// Garantir que o objeto seja persistido globalmente
-h.global.grandma2_connections = _connections;
-
 // Configurações públicas da biblioteca (acessíveis via config)
 var _ma2_cfg = {
     // Credenciais padrão (podem ser sobrescritas por conexão)
@@ -94,7 +89,7 @@ function loadStoredCredentials(receiverID) {
             return data;
         }
     } catch (e) {
-        __ma2Log('Failed to load saved credentials for receiver {}: {}', [receiverID, e]);
+        __ma2Log("Failed to \\u006Coad saved credentials for receiver {}: {}", [receiverID, e]);
     }
     return null;
 }
@@ -190,8 +185,11 @@ function isPromptLine(str) {
  * @returns {grandma2Connection}
  */
 function getConnection(receiverID) {
-    if (!_connections[receiverID]) {
-        _connections[receiverID] = {
+    if (h.global.grandma2_connections == null) {
+        h.global.grandma2_connections = {};
+    }
+    if (!h.global.grandma2_connections[receiverID]) {
+        h.global.grandma2_connections[receiverID] = {
             receiverID: receiverID,
             client: null,
             isLoggedIn: false,
@@ -207,7 +205,7 @@ function getConnection(receiverID) {
         };
     }
     
-    var conn = _connections[receiverID];
+    var conn = h.global.grandma2_connections[receiverID];
     
     return conn;
 }
@@ -395,7 +393,7 @@ function connect(receiverID, options) {
 
                     var input = null;
                     try {
-                        input = h.input(params);
+                        input = h.input(params, true);
                     } catch (eDlg) {
                         __ma2Log('Failed to open the credentials dialog: {}', [eDlg]);
                     }

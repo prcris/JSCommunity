@@ -1,0 +1,14 @@
+{
+    "id": "set_executor_by_bg_tag",
+    "name": "Set Executor from a Tag",
+    "description": "Set Executor from a Tag",
+    "i18n": {
+        "name": {
+            "pt": "Alterar Executor a partir de uma Tag"
+        },
+        "description": {
+            "pt": "Alterar Executor a partir de uma Tag"
+        }
+    },
+    "script_filter": " obj.type == 'trigger' && obj.when == 'displaying' && (obj.item == 'any_theme' || obj.item == 'any_background') "
+}

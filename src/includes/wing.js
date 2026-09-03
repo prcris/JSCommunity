@@ -127,7 +127,7 @@ function __wingCommandToBytes(command, stage) {
     }
 }
 
-function __wingByteValue(bytes, index) {
+function __wingByte_Value(bytes, index) {
     var value = bytes[index];
     if (value < 0) value += 256;
     return value;
@@ -139,7 +139,7 @@ function __wingBytesToSafeText(bytes, limit) {
     var arr = [];
     var max = Math.min(bytes.length, limit);
     for (var i = 0; i < max; i++) {
-        var value = __wingByteValue(bytes, i);
+        var value = __wingByte_Value(bytes, i);
         if (value >= 32 && value <= 126) {
             arr.push(String.fromCharCode(value));
         } else {
@@ -162,18 +162,18 @@ function __oscStringAt(raw, pos) {
 }
 
 function __wingReadInt32BE(bytes, pos) {
-    var b0 = __wingByteValue(bytes, pos);
-    var b1 = __wingByteValue(bytes, pos + 1);
-    var b2 = __wingByteValue(bytes, pos + 2);
-    var b3 = __wingByteValue(bytes, pos + 3);
+    var b0 = __wingByte_Value(bytes, pos);
+    var b1 = __wingByte_Value(bytes, pos + 1);
+    var b2 = __wingByte_Value(bytes, pos + 2);
+    var b3 = __wingByte_Value(bytes, pos + 3);
     return (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
 }
 
 function __wingReadFloat32BE(bytes, pos) {
-    var b0 = __wingByteValue(bytes, pos);
-    var b1 = __wingByteValue(bytes, pos + 1);
-    var b2 = __wingByteValue(bytes, pos + 2);
-    var b3 = __wingByteValue(bytes, pos + 3);
+    var b0 = __wingByte_Value(bytes, pos);
+    var b1 = __wingByte_Value(bytes, pos + 1);
+    var b2 = __wingByte_Value(bytes, pos + 2);
+    var b3 = __wingByte_Value(bytes, pos + 3);
     var sign = (b0 & 128) !== 0 ? -1 : 1;
     var exponent = ((b0 & 127) << 1) | (b1 >> 7);
     var mantissa = ((b1 & 127) << 16) | (b2 << 8) | b3;
@@ -222,7 +222,7 @@ function __parseWingOSCBuffer(buffer) {
     return result;
 }
 
-function __wingFirstStringArg(bytes) {
+function __wingFirstStringParam(bytes) {
     var parsed = __parseWingOSCBuffer(bytes);
     if (parsed && parsed.args) {
         for (var i = 0; i < parsed.args.length; i++) {
@@ -232,7 +232,7 @@ function __wingFirstStringArg(bytes) {
     return bytes != null ? __wingBytesToSafeText(bytes, 160) : null;
 }
 
-function __wingLastFloatArg(bytes) {
+function __wingLastFloatParam(bytes) {
     var parsed = __parseWingOSCBuffer(bytes);
     if (!parsed || !parsed.args) return null;
     for (var i = parsed.args.length - 1; i >= 0; i--) {
@@ -241,7 +241,7 @@ function __wingLastFloatArg(bytes) {
     return null;
 }
 
-function __wingLastIntArg(bytes) {
+function __wingLastIntParam(bytes) {
     var parsed = __parseWingOSCBuffer(bytes);
     if (!parsed || !parsed.args) return null;
     for (var i = parsed.args.length - 1; i >= 0; i--) {
@@ -311,7 +311,7 @@ function __wingGetMute(receiverID, path) {
     if (r == null) throw h.i18n('Timed out while waiting for a response from WING.');
     var intValue;
     try {
-        intValue = __wingLastIntArg(r);
+        intValue = __wingLastIntParam(r);
     } catch (e2) {
         throw __wingError('getMute:parse ' + path, 'Failed to parse the mute state: {}', [e2]);
     }
@@ -331,7 +331,7 @@ function __wingSetMute(receiverID, path, state) {
 
 function __wingGetName(receiverID, path) {
     var r = jsc.wing.request(receiverID, createCmdPath(path).toBytes());
-    return __wingFirstStringArg(r);
+    return __wingFirstStringParam(r);
 }
 
 function __wingSetName(receiverID, path, name) {
@@ -342,7 +342,7 @@ function __wingSetName(receiverID, path, name) {
 function __wingGetFaderDb(receiverID, path) {
     var r = jsc.wing.request(receiverID, createCmdPath(path).toBytes());
     if (r == null) throw h.i18n('Timed out while waiting for a response from WING.');
-    return __wingLastFloatArg(r);
+    return __wingLastFloatParam(r);
 }
 
 function __wingSetFaderDb(receiverID, path, dbValue) {
