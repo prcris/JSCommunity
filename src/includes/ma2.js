@@ -100,7 +100,7 @@ function loadStoredCredentials(receiverID) {
             return data;
         }
     } catch (e) {
-        jsc.ma2.__ma2Log('Failed to load saved credentials for receiver {}: {}', [receiverID, e]);
+        jsc.ma2.__ma2Log("Failed to \\u006Coad saved credentials for receiver {}: {}", [receiverID, e]);
     }
     return null;
 }
